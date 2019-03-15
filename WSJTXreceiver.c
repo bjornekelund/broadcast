@@ -13,7 +13,7 @@ void read_string(char **pointer, char *string) {
   int32_t len, rlen;
   memcpy(&rlen, *pointer, 4);
   len = ntohl(rlen);
-  printf("\nread_string: len=%d\n", len);
+//  printf("\nread_string: len=%d\n", len);
   if (len != -1) {
     memcpy(string, *pointer + 4, len);
     string[len] = '\0';
@@ -38,6 +38,26 @@ void read_int1(char **pointer, char *value) {
   *pointer += 1;
 }
 
+void read_double(char **pointer, double *value) {
+   memcpy(value, *pointer, 8);
+//  *value = ntohl(rvalue);
+//  printf("read_int4: *value=%d ", *value);
+//  for (int i = 0; i < 8; i++)
+//    memcpy(value + i, *pointer + 7 - i, 1);
+  printf("Value: ");
+//  for (int i = 0; i < 8; i++)
+//    printf("%2x ", (char)*(value + i));
+  printf("%f\n", *value);
+  printf("Pointer: ");
+//  for (int i = 0; i < 8; i++)
+//    printf("%2x ", (char)*(*pointer + i) & 0xff);
+  printf("%f\n", (double)**pointer);
+  printf("\n");
+  *pointer += 8;
+}
+
+
+
 int main(int argc, char *argv[])
 {
     char *dst;
@@ -49,6 +69,7 @@ int main(int argc, char *argv[])
     char recvString[MAXRECVSTRING+1]; /* Buffer for received string */
     int recvStringLen;                /* Length of received string */
     char string[64];
+    double duoble;
 
     if (argc != 2)    /* Test for correct number of arguments */
     {
@@ -72,7 +93,7 @@ int main(int argc, char *argv[])
     if (bind(sock, (struct sockaddr *) &broadcastAddr, sizeof(broadcastAddr)) < 0)
         DieWithError("bind() failed");
 
-    for (msg = 0; msg < 2; msg++) {
+    for (msg = 0; msg < 10; msg++) {
 
       /* Receive a single datagram from the server */
       if ((recvStringLen = recvfrom(sock, recvString, MAXRECVSTRING, 0, NULL, 0)) < 0)
@@ -85,14 +106,14 @@ int main(int argc, char *argv[])
                 dst = recvString + 12;
                 read_string(&dst, string); printf("ID: \"%s\" ", string);
                 break;
-        case 1: printf("Status ");
+        case 1: printf("Status:    ");
                 dst = recvString + 12;
                 read_string(&dst, string); printf("ID: \"%s\" ", string);
                 read_int4(&dst, &int4);
                 read_int4(&dst, &int4); printf("bfreq: %d ", int4);
                 read_string(&dst, string); printf("Mode: \"%s\" ", string);
                 read_string(&dst, string); printf("Call: \"%s\" ", string);
-                read_string(&dst, string); printf("SNR: \"%s\" ", string);
+                read_string(&dst, string); printf("SNR: \"%3s\" ", string);
                 read_string(&dst, string); printf("Mode: \"%s\" ", string);
                 read_int1(&dst, &int1);
                 read_int1(&dst, &int1);
@@ -103,11 +124,20 @@ int main(int argc, char *argv[])
                 read_string(&dst, string); printf("DE grid: \"%s\" ", string);
                 read_string(&dst, string); printf("DX grid: \"%s\" ", string);
                 read_int1(&dst, &int1);
-                read_string(&dst, string); printf("Submode: \"%s\" ", string);
+                read_string(&dst, string); 
                 break;
-        case 2: printf("Decode ");
-                for (i= 0; i < recvStringLen; i++)
-                  printf("%02x ", recvString[i] & 0xFF);
+        case 2: printf("Decode:    ");
+                dst = recvString + 12;
+                read_string(&dst, string); printf("ID: \"%s\" ", string);
+                read_int1(&dst, &int1); // New decode
+                read_int4(&dst, &int4); // Time 
+                read_int4(&dst, &int4); printf("SNR: %3d ", int4);
+                read_double(&dst, &duoble); printf("dt: %3.1f ", duoble);
+                read_int4(&dst, &int4); printf("Frq: %4d ", int4);
+                read_string(&dst, string); printf("Rx Mode: \"%s\" ", string);
+                read_string(&dst, string); printf("Message: \"%s\" ", string);
+                read_int1(&dst, &int1);
+                read_int1(&dst, &int1);
                 break;
         default: printf("Unsupported ");
       }
