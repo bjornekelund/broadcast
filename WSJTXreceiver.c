@@ -40,29 +40,38 @@ void read_int1(char **pointer, char *value) {
 }
 
 void read_double(char **pointer, double *value) {
-  int64_t bits;
+  uint64_t bits, mantissa;
+  char *bitsp, *pointerp;
   char sign;
-  int32_t exponent;
-  int64_t mantissa;
+  uint32_t exponent;
+  int32_t sexponent;
 
-//  for (int i = 0; i < 8; i++)
-//    memcpy(&bits + i, *pointer + 7 - i, 1);
+  bitsp = (char *)&bits;
+  pointerp = *pointer + 7;
+  for (int i = 0; i < 8; i++) {
+    *bitsp = *pointerp;
+    bitsp++;
+    pointerp--;
+  }
 
-  memcpy(&bits, *pointer, 8);
   sign = ((bits >> 63) == 0) ? 1 : -1;
-  exponent = ((bits >> (63 - 12)) & 0xfff) - 1023;
-  mantissa = (exponent == 0) ?
-        (bits & 0x7fffffffffffff) << 1 :
-        (bits & 0x7fffffffffffff) | 0x80000000000000;
-  *value = sign * mantissa * pow(2.0, (double)(exponent - 55));
+  exponent = (bits >> 52) & 0x7ff;
+  mantissa = bits & 0xfffffffffffff;
 
-  printf("read_double: sign=%d exponent=%d ", (int)sign, exponent);
+  sexponent = exponent - 1023;
+  if (mantissa == 0 && exponent == 0 && sign == 0)
+    *value = 0.0;
+  else
+    *value = sign * (1.0 + (double)mantissa / pow(2.0, 52)) * pow(2.0, (double)(sexponent));
+
+  printf("read_double: sign=%d sexponent=%d ", (int)sign, sexponent);
 //  for (int i = 0; i < 8; i++)
 //    printf("%02x", (char)*(value + i) & 0xff);
 //  printf("*value=%.1f ", *value);
-  printf(" Pointer: ");
-  for (int i = 0; i < 8; i++)
-    printf("%02x", (char)*(*pointer + i) & 0xff);
+//  printf(" bits: %lu ", bits);
+//  printf(" **pointer: %lu ", (uint64_t)**pointer);
+//  for (int i = 0; i < 8; i++)
+//    printf("%02x", (char)(&bits)[i] & 0xff);
   printf("\n");
   *pointer += 8;
 }
@@ -142,9 +151,9 @@ int main(int argc, char *argv[])
                 read_int4(&dst, &int4); // Time
                 read_int4(&dst, &int4); printf("SNR: %3d ", int4);
                 printf("dt hex: ");
-                for (int i = 0; i <8; i++)
-                  printf("%02x%s", dst[i] & 0xff, (i == 7) ? " " : ".");
-                read_double(&dst, &duoble); printf("dt: %.1e ", duoble);
+//                for (int i = 0; i <8; i++)
+//                  printf("%02x%s", dst[i] & 0xff, (i == 7) ? " " : ".");
+                read_double(&dst, &duoble); printf("dt: %.2f ", duoble);
                 read_int4(&dst, &int4); printf("Frq: %4d ", int4);
                 read_string(&dst, string); printf("Rx Mode: \"%s\" ", string);
                 read_string(&dst, string); printf("Message: \"%s\" ", string);
