@@ -39,24 +39,23 @@ void read_int1(char **pointer, char *value) {
 }
 
 void read_double(char **pointer, double *value) {
+   char rvalue[8];
    memcpy(value, *pointer, 8);
 //  *value = ntohl(rvalue);
 //  printf("read_int4: *value=%d ", *value);
 //  for (int i = 0; i < 8; i++)
 //    memcpy(value + i, *pointer + 7 - i, 1);
   printf("Value: ");
-//  for (int i = 0; i < 8; i++)
-//    printf("%2x ", (char)*(value + i));
-  printf("%f\n", *value);
-  printf("Pointer: ");
-//  for (int i = 0; i < 8; i++)
-//    printf("%2x ", (char)*(*pointer + i) & 0xff);
-  printf("%f\n", (double)**pointer);
-  printf("\n");
+  for (int i = 0; i < 8; i++)
+    printf("%02x", (char)*(value + i) & 0xff);
+  printf("=%.1f ", *value);
+  printf(" Pointer: ");
+  for (int i = 0; i < 8; i++)
+    printf("%02x", (char)*(*pointer + i) & 0xff);
+  printf("=%.1f ", (float)**pointer);
+//  printf("\n");
   *pointer += 8;
 }
-
-
 
 int main(int argc, char *argv[])
 {
