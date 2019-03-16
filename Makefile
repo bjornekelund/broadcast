@@ -3,7 +3,7 @@ CFLAGS =
 all: brx btx wrx
 
 wrx: WSJTXreceiver.c DieWithError.c
-	gcc $(CFLAGS) -D_GNU_SOURCE -o $@ $^
+	gcc $(CFLAGS) -D_GNU_SOURCE -o $@ $^ -lm
 
 btx: BroadcastSender.c DieWithError.c
 	gcc $(CFLAGS) -D_GNU_SOURCE -o $@ $^

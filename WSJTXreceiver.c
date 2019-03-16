@@ -4,6 +4,7 @@
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
 #include <unistd.h>     /* for close() */
+#include <math.h>       /* for pow() */
 
 #define MAXRECVSTRING 1024  /* Longest string to receive */
 
@@ -39,21 +40,30 @@ void read_int1(char **pointer, char *value) {
 }
 
 void read_double(char **pointer, double *value) {
-   char rvalue[8];
-   memcpy(value, *pointer, 8);
-//  *value = ntohl(rvalue);
-//  printf("read_int4: *value=%d ", *value);
+  int64_t bits;
+  char sign;
+  int32_t exponent;
+  int64_t mantissa;
+
 //  for (int i = 0; i < 8; i++)
-//    memcpy(value + i, *pointer + 7 - i, 1);
-  printf("Value: ");
-  for (int i = 0; i < 8; i++)
-    printf("%02x", (char)*(value + i) & 0xff);
-  printf("=%.1f ", *value);
+//    memcpy(&bits + i, *pointer + 7 - i, 1);
+
+  memcpy(&bits, *pointer, 8);
+  sign = ((bits >> 63) == 0) ? 1 : -1;
+  exponent = ((bits >> (63 - 12)) & 0xfff) - 1023;
+  mantissa = (exponent == 0) ?
+        (bits & 0x7fffffffffffff) << 1 :
+        (bits & 0x7fffffffffffff) | 0x80000000000000;
+  *value = sign * mantissa * pow(2.0, (double)(exponent - 55));
+
+  printf("read_double: sign=%d exponent=%d ", (int)sign, exponent);
+//  for (int i = 0; i < 8; i++)
+//    printf("%02x", (char)*(value + i) & 0xff);
+//  printf("*value=%.1f ", *value);
   printf(" Pointer: ");
   for (int i = 0; i < 8; i++)
     printf("%02x", (char)*(*pointer + i) & 0xff);
-  printf("=%.1f ", (float)**pointer);
-//  printf("\n");
+  printf("\n");
   *pointer += 8;
 }
 
@@ -129,9 +139,12 @@ int main(int argc, char *argv[])
                 dst = recvString + 12;
                 read_string(&dst, string); printf("ID: \"%s\" ", string);
                 read_int1(&dst, &int1); // New decode
-                read_int4(&dst, &int4); // Time 
+                read_int4(&dst, &int4); // Time
                 read_int4(&dst, &int4); printf("SNR: %3d ", int4);
-                read_double(&dst, &duoble); printf("dt: %3.1f ", duoble);
+                printf("dt hex: ");
+                for (int i = 0; i <8; i++)
+                  printf("%02x%s", dst[i] & 0xff, (i == 7) ? " " : ".");
+                read_double(&dst, &duoble); printf("dt: %.1e ", duoble);
                 read_int4(&dst, &int4); printf("Frq: %4d ", int4);
                 read_string(&dst, string); printf("Rx Mode: \"%s\" ", string);
                 read_string(&dst, string); printf("Message: \"%s\" ", string);
