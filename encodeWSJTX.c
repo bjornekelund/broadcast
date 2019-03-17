@@ -9,20 +9,23 @@
 #define MAXRECVSTRING 1024  /* Longest string to receive */
 
 
-void read_double(char **pointer, double *value) {
-  uint64_t bits, mantissa;
-  char *bitsp, *pointerp;
-  char sign;
+void read_double(uint8_t **pointer, double *value) {
+  uint64_t bits, mantissa, *ppointer;
+  uint8_t *bitsp, *pointerp;
+  int sign;
   uint32_t exponent;
   int32_t sexponent;
+  double f;
 
-  bitsp = (char *)&bits;
+  bitsp = (uint8_t *)&bits;
   pointerp = *pointer + 7;
   for (int i = 0; i < 8; i++) {
     *bitsp = *pointerp;
     bitsp++;
     pointerp--;
   }
+  ppointer = (uint64_t *)*pointer;
+  printf("read_double: **pointer=%016lx bits=%016lx\n", *ppointer, bits);
 
   sign = ((bits >> 63) == 0) ? 1 : -1;
   exponent = (bits >> 52) & 0x7ff;
@@ -37,7 +40,7 @@ void read_double(char **pointer, double *value) {
   printf("read_double: sign=%d sexponent=%d ", (int)sign, sexponent);
 //  for (int i = 0; i < 8; i++)
 //    printf("%02x", (char)*(value + i) & 0xff);
-//  printf("*value=%.1f ", *value);
+  printf("*value=%.1f ", *value);
 //  printf(" bits: %lu ", bits);
 //  printf(" **pointer: %lu ", (uint64_t)**pointer);
 //  for (int i = 0; i < 8; i++)
@@ -48,49 +51,31 @@ void read_double(char **pointer, double *value) {
 
 int main(int argc, char *argv[])
 {
-    char *dst, *bitsp;
-    char int1;
-    int32_t i, msg, int4;
-    double duoble;
-    int64_t bits;
+  double f, af, c, duoble;
+  uint64_t exponent, sign, bits, mantissa, rbits;
+  uint8_t *bitsp, *rbitsp;
 
-  uint64_t bits, mantissa;
-  char *bitsp, *pointerp;
-  char sign;
-  uint32_t exponent;
-  int32_t sexponent;
-
-  bitsp = (char *)&bits;
-  pointerp = *pointer + 7;
-  for (int i = 0; i < 8; i++) {
-    *bitsp = *dst;
-    bitsp++;
-    pointerp--;
+  if (argc != 2) {
+    printf("Usage: %s float\n", argv[0]);
+    return 1;
   }
 
-  sign = ((bits >> 63) == 0) ? 1 : -1;
-  exponent = (bits >> 52) & 0x7ff;
-  mantissa = bits & 0xfffffffffffff;
+  f = atof(argv[1]);
+  af = fabs(f);
 
-  sexponent = exponent - 1023;
-  if (mantissa == 0 && exponent == 0 && sign == 0)
-    *value = 0.0;
-  else
-    *value = sign * (1.0 + (double)mantissa / pow(2.0, 52)) * pow(2.0, (double)(sexponent));
+  sign = (f < 0) ? 1 : 0;
+  exponent = (uint64_t)(log(af)/log(2.0) + 1023);
+  mantissa = (uint64_t)((af / pow(2, floor(log(af)/log(2.0))) - 1) * pow(2, 52));
 
-  printf("read_double: sign=%d sexponent=%d ", (int)sign, sexponent);
-//  for (int i = 0; i < 8; i++)
-//    printf("%02x", (char)*(value + i) & 0xff);
-//  printf("*value=%.1f ", *value);
-//  printf(" bits: %lu ", bits);
-//  printf(" **pointer: %lu ", (uint64_t)**pointer);
-//  for (int i = 0; i < 8; i++)
-//    printf("%02x", (char)(&bits)[i] & 0xff);
-  printf("\n");
+  bits = (sign & 0x1) << 63 | (exponent & 0x7ff) << 52 | mantissa & 0xfffffffffffff;
 
-  read_double(*pointer, &duoble);
+  rbits = ((uint64_t)htonl(bits & 0xffffffff) << 32) | htonl(bits >> 32);
 
+  printf("sign=%lu exponent=%lx mantissa=%lx bits=%016lx rbits=%016lx\n",
+    sign, exponent, mantissa, bits, rbits);
 
+  rbitsp = (char *)&rbits;
+  read_double(&rbitsp, &duoble);
 
-    exit(0);
+  exit(0);
 }
