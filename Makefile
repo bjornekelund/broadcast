@@ -16,4 +16,4 @@ brx: BroadcastReceiver.c DieWithError.c
 
 
 clean:
-	rm -rf btx brx enc
+	rm -rf btx brx enc wrx
