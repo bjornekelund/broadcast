@@ -11,7 +11,7 @@ void DieWithError(char *errorMessage);  /* External error handling function */
 
 int main(int argc, char *argv[])
 {
-    int i, msg; 
+    int i, msg;
     int sock;                         /* Socket */
     struct sockaddr_in broadcastAddr; /* Broadcast Address */
     unsigned short broadcastPort;     /* Port */
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     if (bind(sock, (struct sockaddr *) &broadcastAddr, sizeof(broadcastAddr)) < 0)
         DieWithError("bind() failed");
 
-    for (msg = 0; msg < 2; msg++) {
+    for (msg = 0; msg < 2000; msg++) {
 
       /* Receive a single datagram from the server */
       if ((recvStringLen = recvfrom(sock, recvString, MAXRECVSTRING, 0, NULL, 0)) < 0)
@@ -48,10 +48,12 @@ int main(int argc, char *argv[])
 
       recvString[recvStringLen] = '\0';
 
-      for (i= 0; i < recvStringLen; i++)
-        printf("%02x ", recvString[i] & 0xFF);
+//      for (i= 0; i < recvStringLen; i++)
+//
+//        printf("%02x ", recvString[i] & 0xFF);
+        printf("%s", recvString);
 
-      printf("\n");
+      printf("\n\n");
 //    printf("Received: %s\n", recvString);    /* Print the received string */
 
     } // for # of messages
